@@ -1,0 +1,10 @@
+[project]
+name = "glaze-chem"
+version = "0.1.0"
+description = "Educational notebooks for ceramic glaze UMF calculations"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jupyterlab>=4.5.1",
+    "pyyaml>=6.0.3",
+]
