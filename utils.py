@@ -279,6 +279,41 @@ def write_recipes(recipes, path=None):
         return result
 
 
+# --- Constraints ---
+
+def read_constraints(source):
+    """
+    Read material constraints from YAML.
+
+    Format:
+        material_id:
+          min: 20
+          max: 50
+        # or fixed value:
+        material_id:
+          fixed: 30
+
+    Returns dict mapping material_id -> {min, max}
+    """
+    data = _load_yaml(source)
+
+    result = {}
+    for mat_id, constraint in data.items():
+        if 'fixed' in constraint:
+            # Fixed value: min == max
+            result[mat_id] = {
+                'min': constraint['fixed'],
+                'max': constraint['fixed']
+            }
+        else:
+            result[mat_id] = {
+                'min': constraint.get('min', 0),
+                'max': constraint.get('max', 100)
+            }
+
+    return result
+
+
 # --- Combined file ---
 
 def read_glaze_file(source):
