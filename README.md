@@ -1,6 +1,21 @@
 # UMF Calculations for Ceramic Glazes
 
-Educational Jupyter notebooks explaining Unity Molecular Formula (UMF) calculations for ceramic glaze chemistry.
+Educational Jupyter notebooks and CLI tools for Unity Molecular Formula (UMF) calculations in ceramic glaze chemistry.
+
+## CLI
+
+```bash
+uv sync
+uv run gchem --help
+```
+
+Commands:
+- `gchem umf` - Calculate UMF from recipe
+- `gchem solve` - Find recipe matching target UMF
+- `gchem cte` - Calculate thermal expansion
+- `gchem blend` - Generate N-axial blend grids
+
+See `cli-example/` for sample files.
 
 ## Notebooks
 
@@ -9,6 +24,8 @@ Educational Jupyter notebooks explaining Unity Molecular Formula (UMF) calculati
 2. **[recipe_to_umf.ipynb](recipe_to_umf.ipynb)** - Going from a glaze recipe (materials and amounts) to UMF. Covers combining material analyses and handling LOI.
 
 3. **[ingredient_substitution.ipynb](ingredient_substitution.ipynb)** - Using UMF to substitute materials while maintaining glaze chemistry.
+
+4. **[solver_examples.ipynb](solver_examples.ipynb)** - UMF matching solver examples.
 
 ## Setup
 
