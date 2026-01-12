@@ -20,3 +20,7 @@ gchem solve target.yaml materials.yaml constraints.yaml
 echo ""
 echo "=== Solve from recipe (match its UMF) ==="
 gchem solve recipes.yaml materials.yaml --recipe leach_4321
+
+echo ""
+echo "=== Calculate UMF with extended flux oxides (Katz) ==="
+gchem umf recipes.yaml materials.yaml --recipe leach_4321 --extended
