@@ -29,8 +29,14 @@ See `cli-example/` for sample files.
 
 ## Setup
 
-Requires Python 3.13+ and [uv](https://github.com/astral-sh/uv).
+Requires [uv](https://github.com/astral-sh/uv), a fast Python package manager that handles Python versions, dependencies, and virtual environments.
 
+Install uv:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then install dependencies and run:
 ```bash
 uv sync
 uv run jupyter lab
