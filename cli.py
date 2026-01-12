@@ -21,6 +21,7 @@ from solver import (
 )
 from utils import read_materials, read_recipes, read_umf, read_constraints, format_umf_table
 from cte import calculate_cte, format_cte
+from blend import generate_blends, format_blends
 
 
 app = typer.Typer(
@@ -158,6 +159,36 @@ def cte(
 
         if i < len(recipe_ids) - 1:
             print()
+
+
+@app.command()
+def blend(
+    recipes_file: Path = typer.Argument(..., help="Recipe file with corner recipes"),
+    materials: Path = typer.Argument(..., help="Materials file"),
+    corners: list[str] = typer.Option(..., "--from", "-f", help="Recipe IDs to blend (2+ corners)"),
+    steps: int = typer.Option(5, "--steps", "-s", help="Number of steps along each edge"),
+    extended: bool = typer.Option(False, "--extended", "-e", help="Use extended UMF (Katz)")
+):
+    """Generate N-axial blend grid from corner recipes."""
+    flux_oxides = FLUX_EXTENDED if extended else FLUX_TRADITIONAL
+
+    recipes = read_recipes(recipes_file)
+    mats = read_materials(materials)
+
+    if len(corners) < 2:
+        print("Need at least 2 corners for a blend")
+        raise typer.Exit(1)
+
+    # Validate corner recipes exist
+    corner_recipes = []
+    for corner_id in corners:
+        if corner_id not in recipes:
+            print(f"Recipe '{corner_id}' not found. Available: {list(recipes.keys())}")
+            raise typer.Exit(1)
+        corner_recipes.append(recipes[corner_id]['materials'])
+
+    blends = generate_blends(corner_recipes, corners, steps, mats, flux_oxides)
+    print(format_blends(blends, mats))
 
 
 if __name__ == "__main__":

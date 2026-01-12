@@ -32,3 +32,7 @@ gchem cte recipes.yaml materials.yaml
 echo ""
 echo "=== CTE with verbose breakdown ==="
 gchem cte recipes.yaml materials.yaml --recipe leach_4321 --verbose
+
+echo ""
+echo "=== Line blend (2 corners, 5 steps) ==="
+gchem blend recipes.yaml materials.yaml --from leach_4321 --from high_feldspar --steps 5
