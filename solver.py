@@ -5,14 +5,21 @@ Given a target recipe (with its UMF) and a set of candidate materials,
 find proportions of candidates that produce an equivalent UMF.
 """
 
+import warnings
 import numpy as np
 from scipy.optimize import differential_evolution, NonlinearConstraint
+
+warnings.filterwarnings('ignore', message='delta_grad == 0.0')
 
 from utils import read_materials, read_recipes, read_umf, read_constraints, format_umf_table
 
 
 # Oxide groupings
-FLUX_OXIDES = ["Li2O", "Na2O", "K2O", "CaO", "MgO", "SrO", "BaO", "ZnO"]
+FLUX_TRADITIONAL = ["Li2O", "Na2O", "K2O", "CaO", "MgO", "SrO", "BaO", "ZnO"]
+FLUX_EXTENDED = FLUX_TRADITIONAL + ["CoO", "CuO", "Fe2O3", "MnO2", "SnO2", "Bi2O3"]
+
+# Default for backwards compatibility
+FLUX_OXIDES = FLUX_TRADITIONAL
 
 MOLECULAR_WEIGHT = {
     "SiO2": 60.085, "Al2O3": 101.961, "B2O3": 69.620, "TiO2": 79.866,
@@ -20,6 +27,9 @@ MOLECULAR_WEIGHT = {
     "MgO": 40.304, "CaO": 56.077, "SrO": 103.619, "BaO": 153.326,
     "ZnO": 81.379, "Fe2O3": 159.688, "MnO": 70.937,
     "P2O5": 141.945, "ZrO2": 123.223,
+    # Extended flux oxides
+    "CoO": 74.932, "CuO": 79.545, "MnO2": 86.937,
+    "SnO2": 150.71, "Bi2O3": 465.96,
 }
 
 
@@ -40,17 +50,21 @@ def material_to_moles(material):
     return moles
 
 
-def recipe_to_umf(recipe, materials):
+def recipe_to_umf(recipe, materials, flux_oxides=None):
     """
     Calculate UMF from a recipe and materials dict.
 
     Args:
         recipe: dict of material_id -> parts
         materials: dict from read_materials()
+        flux_oxides: list of oxide names to treat as fluxes (default: FLUX_TRADITIONAL)
 
     Returns:
         dict with 'flux' and 'other' oxide dicts
     """
+    if flux_oxides is None:
+        flux_oxides = FLUX_TRADITIONAL
+
     total_moles = {}
 
     for mat_id, parts in recipe.items():
@@ -60,15 +74,15 @@ def recipe_to_umf(recipe, materials):
             total_moles[oxide] = total_moles.get(oxide, 0) + moles * parts / 100
 
     # Normalize to unity flux
-    flux_total = sum(total_moles.get(ox, 0) for ox in FLUX_OXIDES)
+    flux_total = sum(total_moles.get(ox, 0) for ox in flux_oxides)
     if flux_total == 0:
         flux_total = 1  # Avoid division by zero
 
     umf = {ox: mol / flux_total for ox, mol in total_moles.items()}
 
     # Split into flux and other
-    flux = {ox: umf[ox] for ox in FLUX_OXIDES if ox in umf and umf[ox] > 0}
-    other = {ox: val for ox, val in umf.items() if ox not in FLUX_OXIDES and val > 0}
+    flux = {ox: umf[ox] for ox in flux_oxides if ox in umf and umf[ox] > 0}
+    other = {ox: val for ox, val in umf.items() if ox not in flux_oxides and val > 0}
 
     return {'flux': flux, 'other': other}
 
@@ -96,7 +110,7 @@ def select_candidates(target_umf, candidates):
     return useful
 
 
-def solve_umf_match(target_umf, candidates, constraints=None):
+def solve_umf_match(target_umf, candidates, constraints=None, flux_oxides=None):
     """
     Find proportions of candidate materials that match target UMF.
 
@@ -108,6 +122,7 @@ def solve_umf_match(target_umf, candidates, constraints=None):
         target_umf: dict with 'flux' and 'other' oxide dicts
         candidates: dict from read_materials()
         constraints: optional dict of material_id -> {min, max} percentages
+        flux_oxides: list of oxide names to treat as fluxes (default: FLUX_TRADITIONAL)
 
     Returns:
         dict with:
@@ -117,6 +132,8 @@ def solve_umf_match(target_umf, candidates, constraints=None):
             'selected': list of material_ids used
     """
     constraints = constraints or {}
+    if flux_oxides is None:
+        flux_oxides = FLUX_TRADITIONAL
 
     # Flatten target UMF to a single dict
     target_flat = {}
@@ -145,7 +162,7 @@ def solve_umf_match(target_umf, candidates, constraints=None):
     if not variable_materials:
         # All materials are fixed - just compute the result
         recipe = {mat_id: val * 100 for mat_id, val in fixed_materials.items()}
-        result_umf = recipe_to_umf(recipe, candidates)
+        result_umf = recipe_to_umf(recipe, candidates, flux_oxides)
         result_flat = {}
         result_flat.update(result_umf['flux'])
         result_flat.update(result_umf['other'])
@@ -154,7 +171,7 @@ def solve_umf_match(target_umf, candidates, constraints=None):
 
     # Build list of all oxides we care about
     all_oxides = sorted(target_flat.keys())
-    flux_indices = [i for i, ox in enumerate(all_oxides) if ox in FLUX_OXIDES]
+    flux_indices = [i for i, ox in enumerate(all_oxides) if ox in flux_oxides]
 
     # Build matrix M where M[i,j] = moles of oxide i per 1 part of material j
     n_oxides = len(all_oxides)
@@ -224,7 +241,7 @@ def solve_umf_match(target_umf, candidates, constraints=None):
         return None
 
     # Calculate resulting UMF
-    result_umf = recipe_to_umf(recipe, candidates)
+    result_umf = recipe_to_umf(recipe, candidates, flux_oxides)
 
     # Calculate error
     result_flat = {}

@@ -1,0 +1,16 @@
+recipes:
+  leach_4321:
+    name: Leach 4321
+    materials:
+      custer_feldspar: 40
+      silica: 30
+      whiting: 20
+      epk: 10
+
+  high_feldspar:
+    name: High Feldspar Clear
+    materials:
+      custer_feldspar: 50
+      silica: 20
+      whiting: 20
+      epk: 10
