@@ -24,3 +24,11 @@ gchem solve recipes.yaml materials.yaml --recipe leach_4321
 echo ""
 echo "=== Calculate UMF with extended flux oxides (Katz) ==="
 gchem umf recipes.yaml materials.yaml --recipe leach_4321 --extended
+
+echo ""
+echo "=== Calculate CTE (thermal expansion) ==="
+gchem cte recipes.yaml materials.yaml
+
+echo ""
+echo "=== CTE with verbose breakdown ==="
+gchem cte recipes.yaml materials.yaml --recipe leach_4321 --verbose

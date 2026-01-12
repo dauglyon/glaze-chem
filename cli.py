@@ -20,6 +20,7 @@ from solver import (
     FLUX_TRADITIONAL, FLUX_EXTENDED
 )
 from utils import read_materials, read_recipes, read_umf, read_constraints, format_umf_table
+from cte import calculate_cte, format_cte
 
 
 app = typer.Typer(
@@ -121,6 +122,39 @@ def umf(
             print("-" * 30)
 
         print(format_umf_table(result))
+
+        if i < len(recipe_ids) - 1:
+            print()
+
+
+@app.command()
+def cte(
+    recipes_file: Path = typer.Argument(..., help="Recipe file"),
+    materials: Path = typer.Argument(..., help="Materials file"),
+    recipe: Optional[str] = typer.Option(None, "--recipe", "-r", help="Recipe ID (omit for all)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show oxide contributions")
+):
+    """Calculate coefficient of thermal expansion."""
+    recipes = read_recipes(recipes_file)
+    mats = read_materials(materials)
+
+    if recipe:
+        if recipe not in recipes:
+            print(f"Recipe '{recipe}' not found. Available: {list(recipes.keys())}")
+            raise typer.Exit(1)
+        recipe_ids = [recipe]
+    else:
+        recipe_ids = list(recipes.keys())
+
+    for i, rid in enumerate(recipe_ids):
+        recipe_data = recipes[rid]
+        result = calculate_cte(recipe_data['materials'], mats)
+
+        if len(recipe_ids) > 1:
+            name = recipe_data.get('name', rid)
+            print(f"{name}:")
+
+        print(format_cte(result, verbose))
 
         if i < len(recipe_ids) - 1:
             print()
