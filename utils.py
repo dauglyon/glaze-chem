@@ -20,14 +20,18 @@ Materials:
           Al2O3: 18.2
           K2O: 10.0
 
-Recipes (with optional UMF):
+Recipes (with optional UMF, url, and add flag):
     recipes:
       cone10_clear:
         name: Cone 10 Clear
+        url: https://glazy.org/recipes/12345
         materials:
           custer_feldspar: 40
           silica: 30
           whiting: 20
+          cobalt_oxide:
+            amount: 2
+            add: true
         umf:
           flux:
             K2O: 0.26
@@ -226,11 +230,23 @@ def write_materials(materials, path=None):
 
 # --- Recipes ---
 
+def _normalize_material(value):
+    """Normalize material entry to {amount, add} format."""
+    if isinstance(value, dict):
+        return {
+            'amount': value.get('amount', 0),
+            'add': value.get('add', False)
+        }
+    else:
+        return {'amount': value, 'add': False}
+
+
 def read_recipes(source):
     """
     Read recipes from YAML.
 
-    Returns dict mapping recipe_id -> {name, materials, umf (optional)}
+    Returns dict mapping recipe_id -> {name, url (optional), materials, umf (optional)}
+    Materials are normalized to {amount, add} format.
     """
     data = _load_yaml(source)
 
@@ -240,8 +256,13 @@ def read_recipes(source):
     for recipe_id, recipe in recipes_data.items():
         entry = {
             'name': recipe.get('name', recipe_id),
-            'materials': dict(recipe.get('materials', {}))
+            'materials': {
+                mat_id: _normalize_material(mat)
+                for mat_id, mat in recipe.get('materials', {}).items()
+            }
         }
+        if 'url' in recipe:
+            entry['url'] = recipe['url']
         if 'umf' in recipe:
             entry['umf'] = {
                 'flux': _normalize_oxides(recipe['umf'].get('flux', {})),
@@ -262,7 +283,21 @@ def write_recipes(recipes, path=None):
         entry = {}
         if recipe.get('name') and recipe['name'] != recipe_id:
             entry['name'] = recipe['name']
-        entry['materials'] = dict(recipe['materials'])
+        if recipe.get('url'):
+            entry['url'] = recipe['url']
+
+        # Write materials - use simple format if no add flag
+        materials_out = {}
+        for mat_id, mat in recipe['materials'].items():
+            if isinstance(mat, dict):
+                if mat.get('add'):
+                    materials_out[mat_id] = {'amount': mat['amount'], 'add': True}
+                else:
+                    materials_out[mat_id] = mat['amount']
+            else:
+                materials_out[mat_id] = mat
+        entry['materials'] = materials_out
+
         if recipe.get('umf'):
             entry['umf'] = {
                 'flux': dict(recipe['umf']['flux']),

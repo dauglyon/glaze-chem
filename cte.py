@@ -52,7 +52,7 @@ def recipe_to_oxide_pct(recipe, materials):
     Calculate oxide weight percentages from a recipe.
 
     Args:
-        recipe: dict of material_id -> parts
+        recipe: dict of material_id -> parts or {amount, add}
         materials: dict from read_materials()
 
     Returns:
@@ -61,7 +61,9 @@ def recipe_to_oxide_pct(recipe, materials):
     total_oxides = {}
     total_loi = 0
 
-    for mat_id, parts in recipe.items():
+    for mat_id, mat_entry in recipe.items():
+        # Handle both simple (number) and dict ({amount, add}) formats
+        parts = mat_entry['amount'] if isinstance(mat_entry, dict) else mat_entry
         mat = materials[mat_id]
         loi = mat.get('loi', 0)
         total_loi += parts * loi / 100

@@ -22,3 +22,8 @@ materials:
     analysis:
       SiO2: 45.73
       Al2O3: 37.36
+
+  cobalt_carbonate:
+    name: Cobalt Carbonate
+    analysis:
+      CoO: 63.0

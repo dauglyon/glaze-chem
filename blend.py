@@ -76,25 +76,40 @@ def blend_recipes(corner_recipes, fractions):
     Create a blended recipe from corner recipes.
 
     Args:
-        corner_recipes: list of recipe dicts (material_id -> parts)
+        corner_recipes: list of recipe dicts (material_id -> parts or {amount, add})
         fractions: tuple of fractions for each corner (sum to 1.0)
 
     Returns:
-        dict of material_id -> parts (normalized to 100)
+        dict of material_id -> {amount, add} (normalized to 100)
     """
-    blended = {}
+    blended = {}  # mat_id -> {amount, add}
 
     for recipe, fraction in zip(corner_recipes, fractions):
-        # Normalize corner recipe to 100 first
-        total = sum(recipe.values())
+        # Get amounts for normalization
+        def get_amount(entry):
+            return entry['amount'] if isinstance(entry, dict) else entry
+
+        total = sum(get_amount(entry) for entry in recipe.values())
         if total == 0:
             continue
 
-        for mat_id, parts in recipe.items():
+        for mat_id, mat_entry in recipe.items():
+            if isinstance(mat_entry, dict):
+                parts = mat_entry['amount']
+                is_add = mat_entry.get('add', False)
+            else:
+                parts = mat_entry
+                is_add = False
+
             normalized = (parts / total) * 100
             contribution = normalized * fraction
             if contribution > 0:
-                blended[mat_id] = blended.get(mat_id, 0) + contribution
+                if mat_id in blended:
+                    blended[mat_id]['amount'] += contribution
+                    # Preserve add flag if any corner has it
+                    blended[mat_id]['add'] = blended[mat_id]['add'] or is_add
+                else:
+                    blended[mat_id] = {'amount': contribution, 'add': is_add}
 
     return blended
 
@@ -164,10 +179,18 @@ def format_blend(blend, materials):
 
     # Recipe
     lines.append("Recipe:")
-    for mat_id, parts in sorted(blend['recipe'].items(), key=lambda x: -x[1]):
+    # Sort by amount
+    def get_amount(entry):
+        return entry['amount'] if isinstance(entry, dict) else entry
+    sorted_mats = sorted(blend['recipe'].items(), key=lambda x: -get_amount(x[1]))
+
+    for mat_id, mat_entry in sorted_mats:
+        parts = get_amount(mat_entry)
+        is_add = mat_entry.get('add', False) if isinstance(mat_entry, dict) else False
         if parts >= 0.1:
             name = materials.get(mat_id, {}).get('name', mat_id)
-            lines.append(f"  {name:20} {parts:6.1f}")
+            prefix = "+ " if is_add else "  "
+            lines.append(f"{prefix}{name:20} {parts:6.1f}")
 
     # UMF
     lines.append("")

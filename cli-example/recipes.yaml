@@ -14,3 +14,15 @@ recipes:
       silica: 20
       whiting: 20
       epk: 10
+
+  test_with_add:
+    name: Test With Additive
+    url: https://glazy.org/recipes/12345
+    materials:
+      custer_feldspar: 40
+      silica: 30
+      whiting: 20
+      epk: 10
+      cobalt_carbonate:
+        amount: 1
+        add: true

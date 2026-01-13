@@ -55,7 +55,7 @@ def recipe_to_umf(recipe, materials, flux_oxides=None):
     Calculate UMF from a recipe and materials dict.
 
     Args:
-        recipe: dict of material_id -> parts
+        recipe: dict of material_id -> parts or {amount, add}
         materials: dict from read_materials()
         flux_oxides: list of oxide names to treat as fluxes (default: FLUX_TRADITIONAL)
 
@@ -67,7 +67,9 @@ def recipe_to_umf(recipe, materials, flux_oxides=None):
 
     total_moles = {}
 
-    for mat_id, parts in recipe.items():
+    for mat_id, mat_entry in recipe.items():
+        # Handle both simple (number) and dict ({amount, add}) formats
+        parts = mat_entry['amount'] if isinstance(mat_entry, dict) else mat_entry
         mat = materials[mat_id]
         mat_moles = material_to_moles(mat)
         for oxide, moles in mat_moles.items():
